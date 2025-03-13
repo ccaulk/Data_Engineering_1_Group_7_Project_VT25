@@ -11,7 +11,7 @@ The dataset we used contains 3.8 million reddit posts, is approximately 18.5 GB,
 We used Hadoop and Apache Spark for our distributed file system architecture. This is because Hadoop is fault tolerant and scalable and is able to work with large datasets such as the one that we have. Spark is easy to use with PySpark and integrates well with Hadoop. Spark is also horizontally scalable which is beneficial to have if the data ever increases in size.
 
 # DFS setup
-This setup will run through the set up that we did to get the Hapood cluster and Spark cluster up and running. The following code was added to every VM's /etc/hosts file so the VM's could communicate with each other.  
+This setup will run through the set up that we did to get the Hapood cluster and Spark cluster up and running. The following code was added to every VM that was used as a Datanode or Workernode in their /etc/hosts file so the VM's could communicate with each other.  
 ```
 192.168.2.89 group-7-headnode
 192.168.2.236 group-7-wrokernode
@@ -123,6 +123,55 @@ Then to start the Workernodes we ran
 
 ## Drivers
 The goal is then use a driver VM similar to the one used in Lab 3 and connect to our own cluster to run our troll detection algorithm.  
+
+#### Driver setup  
+This runs through a quickset up for a driver to connect to our Spark/Hadoop cluster. On a newly created VM run.  
+```sudo apt-get install -y openjdk-8-jdk```
+```echo "export PYSPARK_PYTHON=python3" >> ~/.bashrc```  
+```source ~/.bashrc```  
+```sudo apt-get install -y git```  
+```sudo apt-get install -y python3-pip```  
+```python3 -m pip install pyspark==3.5.5 ```  
+```python3 -m pip install pandas```  
+```python3 -m pip install matplotlib```  
+Clone our github repository 
+```git clone https://github.com/ccaulk/Data_Engineering_1_Group_7_Project_VT25.git```  
+```python3 -m pip install jupyterlab```   
+```jupyter lab```  
+
+#### Lab 3 modification
+If someone from our group was using their Lab 3 driver then they only needed to uninstall java and pyspark and then reinstall the following versions if there were issuses.  
+```python3 -m pip install pyspark==3.5.5 ```  
+```sudo apt-get install -y openjdk-8-jdk```  
+
+## Python Code
+Once a jupyter session was created to access the reddit data we had the following pyspark configurations.  
+```
+# New API
+spark_session = SparkSession.builder\
+        .master("spark://192.168.2.89:7077") \
+        .appName("(name)")\
+        .config("spark.driver.host","local VM IP")\
+        .config("spark.dynamicAllocation.enabled", True)\
+        .config("spark.dynamicAllocation.shuffleTracking.enabled",True)\
+        .config("spark.shuffle.service.enabled", False)\
+        .config("spark.dynamicAllocation.executorIdleTimeout","30s")\
+        .config("spark.dynamicAllocation.minExecutors","1")\
+        .config("spark.dynamicAllocation.maxExecutors","4")\
+        .config("spark.executor.instances", "4") \
+        .config("spark.executor.memory", "X")\
+        .config("spark.executor.cores", X)\
+        .config("spark.driver.port",9999)\
+        .config("spark.blockManager.port",10005)\
+        .getOrCreate()
+    
+# Old API (RDD)
+spark_context = spark_session.sparkContext
+spark_context.setLogLevel("ERROR")
+```
+Where X is a variable that can change and the data was then accessed at  
+```df = spark_session.read.json("hdfs://192.168.2.89:9000/user/ubuntu/corpus/corpus-webis-tldr-17.json")```  
+
 
 
 
